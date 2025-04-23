@@ -49,16 +49,14 @@ fn dgt_helper(
   digit: Int,
   state: t.ParserState,
 ) -> Result(t.ParseResult(Int), String) {
-  // Decompose the input string into graphemes
   case s.to_graphemes(state.str) {
     [] ->
       Error("Unexpected end of input; expected digit " <> int.to_string(digit))
-    [head, ..] -> {
+    [head, ..rest] -> {
       let expected = int.to_string(digit)
       case head == expected {
-        False -> Error("Expected digit " <> expected <> ", found " <> head)
+        False -> dgt_helper(digit, t.ParserState(s.concat(rest), state.idx + 1))
         True -> {
-          // Consume one character from state.str
           let new_rem = s.drop_start(state.str, 1)
           Ok(t.ParseResult(res: digit, rem: new_rem, idx: state.idx + 1))
         }
