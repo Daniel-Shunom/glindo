@@ -76,7 +76,7 @@ fn string_to_int(x: List(String)) -> Int {
   number
 }
 
-fn idx(i: Int, l: List(String)) {
+fn idx(i: Int, l: List(String)) -> Int {
   i + s.length(s.concat(l))
 }
 
