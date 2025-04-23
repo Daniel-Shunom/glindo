@@ -8,13 +8,11 @@ pub fn str(pattern: String) -> t.Parser(String) {
 }
 
 pub fn dgt(digit: Int) -> t.Parser(Int) {
-  t.Parser(fn(state: t.ParserState) { dgt_helper(digit, state) })
+  t.Parser(fn(state) { dgt_helper(digit, state) })
 }
 
 pub fn num() -> t.Parser(Int) {
-  t.Parser(fn(var: t.ParserState) {
-    num_helper(s.to_graphemes(var.str), [], var)
-  })
+  t.Parser(fn(state) { num_helper(s.to_graphemes(state.str), [], state) })
 }
 
 pub fn seq_of(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
@@ -30,10 +28,18 @@ fn str_helper(
   pattern: String,
   state: t.ParserState,
 ) -> Result(t.ParseResult(String), String) {
-  let invalid =
-    "Invalid Match: " <> state.str <> " does not start with " <> pattern
+  let invalid = "Error: did not find " <> pattern <> " in " <> state.str
   case s.starts_with(state.str, pattern) {
-    False -> Error(invalid)
+    False -> {
+      case s.length(state.str) >= s.length(pattern) {
+        False -> Error(invalid)
+        True ->
+          str_helper(
+            pattern,
+            t.ParserState(s.drop_start(state.str, 1), state.idx + 1),
+          )
+      }
+    }
     True -> {
       let remaining = s.drop_start(state.str, s.length(pattern))
       Ok(t.ParseResult(
@@ -65,26 +71,35 @@ fn dgt_helper(
   }
 }
 
+fn string_to_int(x: List(String)) -> Int {
+  let assert Ok(number) = int.parse(s.concat(x))
+  number
+}
+
+fn idx(i: Int, l: List(String)) {
+  i + s.length(s.concat(l))
+}
+
 fn num_helper(
   list_of_graphemes: List(String),
   acc: List(String),
   state: t.ParserState,
 ) -> Result(t.ParseResult(Int), String) {
   case list_of_graphemes {
-    [] -> {
-      case int.parse(s.concat(acc)) {
-        Error(_e) -> Error("invalid digit found")
-        Ok(k) ->
-          Ok(t.ParseResult(
-            res: k,
-            rem: state.str,
-            idx: state.idx + s.length(s.concat(acc)),
-          ))
-      }
-    }
+    [] -> Error("invalid parse: empty string")
     [n, ..rest] -> {
       case list.contains(t.digits, n) {
-        False -> num_helper(rest, acc, state)
+        False -> {
+          case acc {
+            [] -> Error("no digit captured")
+            _ ->
+              Ok(t.ParseResult(
+                string_to_int(acc),
+                state.str,
+                idx(state.idx, acc),
+              ))
+          }
+        }
         True ->
           num_helper(
             rest,
@@ -96,6 +111,7 @@ fn num_helper(
   }
 }
 
+//TODO -> Fix slow quadratic function
 fn seq_helper(
   list_of_parsers: List(t.Parser(a)),
   accumulator: List(a),
