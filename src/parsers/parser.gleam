@@ -1,5 +1,6 @@
 import gleam/int
 import gleam/list
+import gleam/option as opt
 import gleam/string as s
 import parsers/types as t
 
@@ -22,12 +23,16 @@ pub fn chc_of(parserlist: List(t.Parser(a))) -> t.Parser(a) {
   t.Parser(fn(state) { chc_helper(parserlist, state) })
 }
 
+pub fn opt_of(parser: t.Parser(a)) -> t.Parser(opt.Option(a)) {
+  t.Parser(fn(state) { opt_helper(parser, state) })
+}
+
 pub fn seq_of(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
   t.Parser(fn(state) { seq_helper(parserlist, [], state) })
 }
 
-pub fn opt_of(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
-  t.Parser(fn(state) { opt_helper(parserlist, [], state) })
+pub fn mny_of(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
+  t.Parser(fn(state) { mny_helper(parserlist, [], state) })
 }
 
 pub fn run(fnc: t.Parser(a), str: String) -> Result(t.ParseResult(a), String) {
@@ -43,12 +48,16 @@ fn string_to_int(x: List(String)) -> Int {
   number
 }
 
-fn prp(l: List(a), m: a) -> List(a) {
-  list.prepend(l, m)
+pub fn list_int_to_string(list: List(Int)) -> String {
+  s.concat(list.map(list, int.to_string))
 }
 
 fn idx(i: Int, l: List(String)) -> Int {
   i + s.length(s.concat(l))
+}
+
+fn prp(l: List(a), m: a) -> List(a) {
+  list.prepend(l, m)
 }
 
 //================================================================================================
@@ -168,8 +177,7 @@ fn chc_helper(
   }
 }
 
-//TODO -> this function is not purely optional. Fix it
-fn opt_helper(
+fn mny_helper(
   list_of_parsers: List(t.Parser(a)),
   accumulator: List(a),
   state: t.ParserState,
@@ -183,13 +191,25 @@ fn opt_helper(
       ))
     [t.Parser(p_fn), ..rest] -> {
       case p_fn(state) {
-        Error(_) -> opt_helper(rest, accumulator, state)
+        Error(_) -> mny_helper(rest, accumulator, state)
         Ok(t.ParseResult(res, rem, idx)) -> {
           let new_acc = prp(accumulator, res)
           let new_state = t.ParserState(rem, idx)
-          opt_helper(list_of_parsers, new_acc, new_state)
+          mny_helper(list_of_parsers, new_acc, new_state)
         }
       }
     }
+  }
+}
+
+fn opt_helper(
+  parser: t.Parser(a),
+  state: t.ParserState,
+) -> Result(t.ParseResult(opt.Option(a)), String) {
+  let t.Parser(p_fn) = parser
+  case p_fn(state) {
+    Error(_) -> Ok(t.ParseResult(opt.None, state.str, state.idx))
+    Ok(t.ParseResult(res, rem, idx)) ->
+      Ok(t.ParseResult(opt.Some(res), rem, idx))
   }
 }
