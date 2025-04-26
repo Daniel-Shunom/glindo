@@ -35,6 +35,10 @@ pub fn mny_of(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
   t.Parser(fn(state) { mny_helper(parserlist, [], state) })
 }
 
+pub fn bind(parser: t.Parser(a), fnc: fn(a) -> t.Parser(b)) -> t.Parser(b) {
+  t.Parser(fn(state) { bind_helper(parser, state, fnc) })
+}
+
 pub fn run(fnc: t.Parser(a), str: String) -> Result(t.ParseResult(a), String) {
   let t.Parser(p_fn) = fnc
   p_fn(t.ParserState(str: str, idx: 0))
@@ -211,5 +215,21 @@ fn opt_helper(
     Error(_) -> Ok(t.ParseResult(opt.None, state.str, state.idx))
     Ok(t.ParseResult(res, rem, idx)) ->
       Ok(t.ParseResult(opt.Some(res), rem, idx))
+  }
+}
+
+fn bind_helper(
+  parser: t.Parser(a),
+  state: t.ParserState,
+  fnc: fn(a) -> t.Parser(b),
+) -> Result(t.ParseResult(b), String) {
+  let t.Parser(p_fn) = parser
+  case p_fn(state) {
+    Error(e) -> Error(e)
+    Ok(t.ParseResult(res, rem, idx)) -> {
+      let next_parser = fnc(res)
+      let t.Parser(n_fn) = next_parser
+      n_fn(t.ParserState(rem, idx))
+    }
   }
 }
