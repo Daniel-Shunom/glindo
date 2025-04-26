@@ -20,12 +20,12 @@ pub type T {
   Null
 }
 
-pub type Parser(a) {
-  Parser(fn(ParserState) -> Result(ParseResult(a), String))
+pub type JsonError(str) {
+  JsonError(message: str)
 }
 
-pub type ParseProps {
-  ParseProps(char: String, ref_ct: Int)
+pub type Parser(a) {
+  Parser(fn(ParserState) -> Result(ParseResult(a), String))
 }
 
 pub type ParseResult(n) {
@@ -34,10 +34,6 @@ pub type ParseResult(n) {
 
 pub type ParserState {
   ParserState(str: String, idx: Int)
-}
-
-pub type JsonError(str) {
-  JsonError(message: str)
 }
 
 pub const digits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
