@@ -4,7 +4,7 @@ import gleam/string as s
 import parsers/types as t
 
 //================================================================================================
-//                     PARSER FUNCTIONS (START)
+//                     PARSER FUNCTIONS
 //================================================================================================
 pub fn num() -> t.Parser(Int) {
   t.Parser(fn(state) { num_helper(s.to_graphemes(state.str), [], state) })
@@ -36,7 +36,7 @@ pub fn run(fnc: t.Parser(a), str: String) -> Result(t.ParseResult(a), String) {
 }
 
 //================================================================================================
-//                     MEMBER FUNCTIONS (START)
+//                     MEMBER FUNCTIONS
 //================================================================================================
 fn string_to_int(x: List(String)) -> Int {
   let assert Ok(number) = int.parse(s.concat(list.reverse(x)))
@@ -52,7 +52,7 @@ fn idx(i: Int, l: List(String)) -> Int {
 }
 
 //================================================================================================
-//                     HELPER FUNCTIONS (START)
+//                     HELPER FUNCTIONS
 //================================================================================================
 fn str_helper(
   pattern: String,
