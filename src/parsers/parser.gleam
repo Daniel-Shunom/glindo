@@ -1,4 +1,5 @@
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/option as opt
 import gleam/string as s
@@ -90,6 +91,16 @@ fn string_to_int(x: List(String)) -> Int {
 
 pub fn list_int_to_string(list: List(Int)) -> String {
   s.concat(list.map(list, int.to_string))
+}
+
+pub fn print_array_string(list: List(String)) -> Nil {
+  case list {
+    [] -> Nil
+    [str, ..rest] -> {
+      io.println(str)
+      print_array_string(rest)
+    }
+  }
 }
 
 fn idx(i: Int, l: List(String)) -> Int {
