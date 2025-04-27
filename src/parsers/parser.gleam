@@ -37,6 +37,10 @@ pub fn opt_of(parser: t.Parser(a)) -> t.Parser(opt.Option(a)) {
   t.Parser(fn(state) { opt_helper(parser, state) })
 }
 
+pub fn map(parser: t.Parser(a), fnc: fn(a) -> b) -> t.Parser(b) {
+  t.Parser(fn(state) { map_helper(parser, state, fnc) })
+}
+
 pub fn seq_of(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
   t.Parser(fn(state) { seq_helper(parserlist, [], state) })
 }
@@ -45,12 +49,16 @@ pub fn mny_chc(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
   t.Parser(fn(state) { mny_chc_helper(parserlist, [], state) })
 }
 
-pub fn map(parser: t.Parser(a), fnc: fn(a) -> b) -> t.Parser(b) {
-  t.Parser(fn(state) { map_helper(parser, state, fnc) })
+pub fn sep_by(item: t.Parser(a), sep: t.Parser(b)) -> t.Parser(List(a)) {
+  t.Parser(fn(state) { sep_by_helper(item, sep, [], state) })
 }
 
 pub fn bind(parser: t.Parser(a), fnc: fn(a) -> t.Parser(b)) -> t.Parser(b) {
   t.Parser(fn(state) { bind_helper(parser, state, fnc) })
+}
+
+pub fn btwn(fst: t.Parser(a), mid: t.Parser(b), lst: t.Parser(c)) -> t.Parser(b) {
+  btwn_helper(fst, mid, lst)
 }
 
 pub fn run(fnc: t.Parser(a), str: String) -> Result(t.ParseResult(a), String) {
@@ -291,6 +299,40 @@ fn opt_helper(
   }
 }
 
+fn sep_by_helper(
+  item: t.Parser(a),
+  sep: t.Parser(b),
+  accumulator: List(a),
+  state: t.ParserState,
+) -> Result(t.ParseResult(List(a)), String) {
+  let t.Parser(itm_fn) = item
+  let t.Parser(sep_fn) = sep
+  case itm_fn(state) {
+    Error(_) ->
+      Ok(t.ParseResult(
+        res: list.reverse(accumulator),
+        rem: state.str,
+        idx: state.idx,
+      ))
+    Ok(t.ParseResult(res1, rem1, idx1)) -> {
+      let new_acc = prp(accumulator, res1)
+      let new_state = t.ParserState(rem1, idx1)
+      case sep_fn(new_state) {
+        Error(_) ->
+          Ok(t.ParseResult(
+            res: list.reverse(new_acc),
+            rem: new_state.str,
+            idx: new_state.idx,
+          ))
+        Ok(t.ParseResult(_, rem2, idx2)) -> {
+          let new_state2 = t.ParserState(rem2, idx2)
+          sep_by_helper(item, sep, new_acc, new_state2)
+        }
+      }
+    }
+  }
+}
+
 fn bind_helper(
   parser: t.Parser(a),
   state: t.ParserState,
@@ -318,4 +360,12 @@ fn map_helper(
     Ok(t.ParseResult(res, rem, idx)) ->
       Ok(t.ParseResult(res: fnc(res), rem: rem, idx: idx))
   }
+}
+
+fn btwn_helper(
+  first: t.Parser(b),
+  between: t.Parser(a),
+  last: t.Parser(c),
+) -> t.Parser(a) {
+  bind(first, fn(_) { bind(between, fn(x) { map(last, fn(_) { x }) }) })
 }
