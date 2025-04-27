@@ -12,11 +12,21 @@ pub fn num() -> t.Parser(Int) {
 }
 
 pub fn dgt(digit: Int) -> t.Parser(Int) {
+  digit_panicker(digit)
   t.Parser(fn(state) { dgt_helper(digit, state) })
+}
+
+pub fn chr(pattern: String) -> t.Parser(String) {
+  char_panicker(pattern)
+  t.Parser(fn(state) { chr_helper(pattern, state) })
 }
 
 pub fn str(pattern: String) -> t.Parser(String) {
   t.Parser(fn(state) { str_helper(pattern, state) })
+}
+
+pub fn mny_of(parser: t.Parser(a)) -> t.Parser(List(a)) {
+  t.Parser(fn(state) { mny_helper(parser, [], state) })
 }
 
 pub fn chc_of(parserlist: List(t.Parser(a))) -> t.Parser(a) {
@@ -31,8 +41,12 @@ pub fn seq_of(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
   t.Parser(fn(state) { seq_helper(parserlist, [], state) })
 }
 
-pub fn mny_of(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
-  t.Parser(fn(state) { mny_helper(parserlist, [], state) })
+pub fn mny_chc(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
+  t.Parser(fn(state) { mny_chc_helper(parserlist, [], state) })
+}
+
+pub fn map(parser: t.Parser(a), fnc: fn(a) -> b) -> t.Parser(b) {
+  t.Parser(fn(state) { map_helper(parser, state, fnc) })
 }
 
 pub fn bind(parser: t.Parser(a), fnc: fn(a) -> t.Parser(b)) -> t.Parser(b) {
@@ -47,6 +61,20 @@ pub fn run(fnc: t.Parser(a), str: String) -> Result(t.ParseResult(a), String) {
 //================================================================================================
 //                     MEMBER FUNCTIONS
 //================================================================================================
+fn char_panicker(str: String) -> Nil {
+  case s.length(str) != 0 {
+    True -> panic as "Error: more than 1 char detected"
+    False -> Nil
+  }
+}
+
+fn digit_panicker(dgt: Int) -> Nil {
+  case dgt > 9 {
+    True -> panic as "Error: multi-digit number found"
+    False -> Nil
+  }
+}
+
 fn string_to_int(x: List(String)) -> Int {
   let assert Ok(number) = int.parse(s.concat(list.reverse(x)))
   number
@@ -90,6 +118,30 @@ fn str_helper(
         rem: remaining,
         idx: state.idx + s.length(pattern),
       ))
+    }
+  }
+}
+
+fn chr_helper(
+  pattern: String,
+  state: t.ParserState,
+) -> Result(t.ParseResult(String), String) {
+  let more_than_one = "Error: more than one char detected"
+  let invalid = "Error: did not find " <> pattern <> " in " <> state.str
+  case s.length(pattern) != 1 {
+    True -> Error(more_than_one)
+    False -> {
+      case s.starts_with(state.str, pattern) {
+        False -> Error(invalid)
+        True -> {
+          let remaining = s.drop_start(state.str, s.length(pattern))
+          Ok(t.ParseResult(
+            res: pattern,
+            rem: remaining,
+            idx: state.idx + s.length(pattern),
+          ))
+        }
+      }
     }
   }
 }
@@ -181,7 +233,7 @@ fn chc_helper(
   }
 }
 
-fn mny_helper(
+fn mny_chc_helper(
   list_of_parsers: List(t.Parser(a)),
   accumulator: List(a),
   state: t.ParserState,
@@ -195,14 +247,35 @@ fn mny_helper(
       ))
     [t.Parser(p_fn), ..rest] -> {
       case p_fn(state) {
-        Error(_) -> mny_helper(rest, accumulator, state)
+        Error(_) -> mny_chc_helper(rest, accumulator, state)
         Ok(t.ParseResult(res, rem, idx)) -> {
           let new_acc = prp(accumulator, res)
           let new_state = t.ParserState(rem, idx)
-          mny_helper(list_of_parsers, new_acc, new_state)
+          mny_chc_helper(list_of_parsers, new_acc, new_state)
         }
       }
     }
+  }
+}
+
+fn mny_helper(
+  parser: t.Parser(a),
+  accuulator: List(a),
+  state: t.ParserState,
+) -> Result(t.ParseResult(List(a)), String) {
+  let t.Parser(p_fn) = parser
+  case p_fn(state) {
+    Ok(t.ParseResult(res, rem, idx)) -> {
+      let new_acc = prp(accuulator, res)
+      let new_state = t.ParserState(rem, idx)
+      mny_helper(parser, new_acc, new_state)
+    }
+    Error(_) ->
+      Ok(t.ParseResult(
+        res: list.reverse(accuulator),
+        rem: state.str,
+        idx: state.idx,
+      ))
   }
 }
 
@@ -231,5 +304,18 @@ fn bind_helper(
       let t.Parser(n_fn) = next_parser
       n_fn(t.ParserState(rem, idx))
     }
+  }
+}
+
+fn map_helper(
+  parser: t.Parser(a),
+  state: t.ParserState,
+  fnc: fn(a) -> b,
+) -> Result(t.ParseResult(b), String) {
+  let t.Parser(p_fn) = parser
+  case p_fn(state) {
+    Error(e) -> Error(e)
+    Ok(t.ParseResult(res, rem, idx)) ->
+      Ok(t.ParseResult(res: fnc(res), rem: rem, idx: idx))
   }
 }
