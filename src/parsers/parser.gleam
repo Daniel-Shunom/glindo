@@ -63,6 +63,7 @@ pub fn btwn(fst: t.Parser(a), mid: t.Parser(b), lst: t.Parser(c)) -> t.Parser(b)
 }
 
 pub fn run(fnc: t.Parser(a), str: String) -> Result(t.ParseResult(a), String) {
+  string_panicker(str)
   let t.Parser(p_fn) = fnc
   p_fn(t.ParserState(str: str, idx: 0))
 }
@@ -80,6 +81,13 @@ fn char_panicker(str: String) -> Nil {
 fn digit_panicker(dgt: Int) -> Nil {
   case dgt > 9 {
     True -> panic as "Error: multi-digit number found"
+    False -> Nil
+  }
+}
+
+fn string_panicker(str: String) -> Nil {
+  case s.length(str) == 0 {
+    True -> panic as "Error, empty string found"
     False -> Nil
   }
 }
