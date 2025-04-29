@@ -138,7 +138,7 @@ fn str_helper(
   case s.starts_with(state.str, pattern) {
     False -> {
       case s.length(state.str) >= s.length(pattern) {
-        False -> Error(invalid)
+        False -> invalid |> Error
         True ->
           str_helper(
             pattern,
@@ -148,11 +148,12 @@ fn str_helper(
     }
     True -> {
       let remaining = s.drop_start(state.str, s.length(pattern))
-      Ok(t.ParseResult(
+      t.ParseResult(
         res: pattern,
         rem: remaining,
         idx: state.idx + s.length(pattern),
-      ))
+      )
+      |> Ok
     }
   }
 }
@@ -164,17 +165,18 @@ fn chr_helper(
   let more_than_one = "Error: more than one char detected"
   let invalid = "Error: did not find " <> pattern <> " in " <> state.str
   case s.length(pattern) != 1 {
-    True -> Error(more_than_one)
+    True -> more_than_one |> Error
     False -> {
       case s.starts_with(state.str, pattern) {
-        False -> Error(invalid)
+        False -> invalid |> Error
         True -> {
           let remaining = s.drop_start(state.str, s.length(pattern))
-          Ok(t.ParseResult(
+          t.ParseResult(
             res: pattern,
             rem: remaining,
             idx: state.idx + s.length(pattern),
-          ))
+          )
+          |> Ok
         }
       }
     }
@@ -194,7 +196,7 @@ fn dgt_helper(
         False -> dgt_helper(digit, t.ParserState(s.concat(rest), state.idx + 1))
         True -> {
           let new_rem = s.drop_start(state.str, 1)
-          Ok(t.ParseResult(res: digit, rem: new_rem, idx: state.idx + 1))
+          t.ParseResult(res: digit, rem: new_rem, idx: state.idx + 1) |> Ok
         }
       }
     }
@@ -207,7 +209,7 @@ fn num_helper(
   state: t.ParserState,
 ) -> Result(t.ParseResult(Int), String) {
   case list_of_graphemes {
-    [] -> Error("invalid parse: empty string")
+    [] -> "invalid parse: empty string" |> Error
     [n, ..rest] -> {
       case list.contains(t.digits, n) {
         True ->
@@ -216,11 +218,8 @@ fn num_helper(
           case acc {
             [] -> Error("no digit captured")
             _ ->
-              Ok(t.ParseResult(
-                string_to_int(acc),
-                state.str,
-                idx(state.idx, acc),
-              ))
+              t.ParseResult(string_to_int(acc), state.str, idx(state.idx, acc))
+              |> Ok
           }
         }
       }
@@ -235,11 +234,12 @@ fn seq_helper(
 ) -> Result(t.ParseResult(List(a)), String) {
   case list_of_parsers {
     [] ->
-      Ok(t.ParseResult(
+      t.ParseResult(
         res: list.reverse(accumulator),
         rem: state.str,
         idx: state.idx,
-      ))
+      )
+      |> Ok
     [t.Parser(p_fn), ..rest] -> {
       case p_fn(state) {
         Error(e) -> Error(e)
@@ -258,11 +258,11 @@ fn chc_helper(
   state: t.ParserState,
 ) -> Result(t.ParseResult(a), String) {
   case list_of_parsers {
-    [] -> Error("No suitable parser found")
+    [] -> "No suitable parser found" |> Error
     [t.Parser(p_fn), ..rest] -> {
       case p_fn(state) {
         Error(_) -> chc_helper(rest, state)
-        Ok(result) -> Ok(result)
+        Ok(result) -> result |> Ok
       }
     }
   }
@@ -275,11 +275,12 @@ fn mny_chc_helper(
 ) -> Result(t.ParseResult(List(a)), String) {
   case list_of_parsers {
     [] ->
-      Ok(t.ParseResult(
+      t.ParseResult(
         res: list.reverse(accumulator),
         rem: state.str,
         idx: state.idx,
-      ))
+      )
+      |> Ok
     [t.Parser(p_fn), ..rest] -> {
       case p_fn(state) {
         Error(_) -> mny_chc_helper(rest, accumulator, state)
@@ -306,11 +307,12 @@ fn mny_helper(
       mny_helper(parser, new_acc, new_state)
     }
     Error(_) ->
-      Ok(t.ParseResult(
+      t.ParseResult(
         res: list.reverse(accuulator),
         rem: state.str,
         idx: state.idx,
-      ))
+      )
+      |> Ok
   }
 }
 
@@ -320,9 +322,9 @@ fn opt_helper(
 ) -> Result(t.ParseResult(opt.Option(a)), String) {
   let t.Parser(p_fn) = parser
   case p_fn(state) {
-    Error(_) -> Ok(t.ParseResult(opt.None, state.str, state.idx))
+    Error(_) -> t.ParseResult(opt.None, state.str, state.idx) |> Ok
     Ok(t.ParseResult(res, rem, idx)) ->
-      Ok(t.ParseResult(opt.Some(res), rem, idx))
+      t.ParseResult(opt.Some(res), rem, idx) |> Ok
   }
 }
 
@@ -336,23 +338,26 @@ fn sep_by_helper(
   let t.Parser(sep_fn) = sep
   case itm_fn(state) {
     Error(_) ->
-      Ok(t.ParseResult(
+      t.ParseResult(
         res: list.reverse(accumulator),
         rem: state.str,
         idx: state.idx,
-      ))
+      )
+      |> Ok
     Ok(t.ParseResult(res1, rem1, idx1)) -> {
       let new_acc = prp(accumulator, res1)
       let new_state = t.ParserState(rem1, idx1)
       case sep_fn(new_state) {
         Error(_) ->
-          Ok(t.ParseResult(
+          t.ParseResult(
             res: list.reverse(new_acc),
             rem: new_state.str,
             idx: new_state.idx,
-          ))
+          )
+          |> Ok
         Ok(t.ParseResult(_, rem2, idx2)) -> {
-          sep_by_helper(item, sep, new_acc, t.ParserState(rem2, idx2))
+          let new_state2 = t.ParserState(rem2, idx2)
+          sep_by_helper(item, sep, new_acc, new_state2)
         }
       }
     }
