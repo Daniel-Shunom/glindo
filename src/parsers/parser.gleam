@@ -26,6 +26,14 @@ pub fn str(pattern: String) -> t.Parser(String) {
   t.Parser(fn(state) { str_helper(pattern, state) })
 }
 
+pub fn peek_fwd(parser: t.Parser(a)) -> t.Parser(a) {
+  t.Parser(fn(state) { peek_fwd_helper(parser, state) })
+}
+
+pub fn lazy(thunk: fn() -> t.Parser(a)) -> t.Parser(a) {
+  t.Parser(fn(state) { lazy_helper(state, thunk) })
+}
+
 pub fn mny_of(parser: t.Parser(a)) -> t.Parser(List(a)) {
   t.Parser(fn(state) { mny_helper(parser, [], state) })
 }
@@ -344,8 +352,7 @@ fn sep_by_helper(
             idx: new_state.idx,
           ))
         Ok(t.ParseResult(_, rem2, idx2)) -> {
-          let new_state2 = t.ParserState(rem2, idx2)
-          sep_by_helper(item, sep, new_acc, new_state2)
+          sep_by_helper(item, sep, new_acc, t.ParserState(rem2, idx2))
         }
       }
     }
@@ -363,7 +370,7 @@ fn bind_helper(
     Ok(t.ParseResult(res, rem, idx)) -> {
       let next_parser = fnc(res)
       let t.Parser(n_fn) = next_parser
-      n_fn(t.ParserState(rem, idx))
+      t.ParserState(rem, idx) |> n_fn
     }
   }
 }
@@ -375,7 +382,7 @@ fn map_helper(
 ) -> Result(t.ParseResult(b), String) {
   let t.Parser(p_fn) = parser
   case p_fn(state) {
-    Error(e) -> Error(e)
+    Error(e) -> e |> Error
     Ok(t.ParseResult(res, rem, idx)) ->
       Ok(t.ParseResult(res: fnc(res), rem: rem, idx: idx))
   }
@@ -386,5 +393,31 @@ fn btwn_helper(
   between: t.Parser(a),
   last: t.Parser(c),
 ) -> t.Parser(a) {
-  bind(first, fn(_) { bind(between, fn(x) { map(last, fn(_) { x }) }) })
+  use _ <- bind(first)
+  use x <- bind(between)
+  map(last, fn(_) { x })
+}
+
+fn peek_fwd_helper(
+  parser: t.Parser(a),
+  state: t.ParserState,
+) -> Result(t.ParseResult(a), String) {
+  let t.Parser(p_fn) = parser
+  case p_fn(state) {
+    Error(e) -> e |> Error
+    Ok(t.ParseResult(res, ..)) ->
+      t.ParseResult(res: res, rem: state.str, idx: state.idx)
+      |> Ok
+  }
+}
+
+fn lazy_helper(
+  state: t.ParserState,
+  thunk: fn() -> t.Parser(a),
+) -> Result(t.ParseResult(a), String) {
+  let t.Parser(p_fn) = thunk()
+  case p_fn(state) {
+    Error(e) -> e |> Error
+    Ok(k) -> k |> Ok
+  }
 }
