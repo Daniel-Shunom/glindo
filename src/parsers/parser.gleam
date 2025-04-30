@@ -12,6 +12,10 @@ pub fn num() -> t.Parser(Int) {
   t.Parser(fn(state) { num_helper(s.to_graphemes(state.str), [], state) })
 }
 
+pub fn wht_space() -> t.Parser(String) {
+  map(mny_of(t.Parser(fn(state) { wht_spc_helper(state) })), s.concat)
+}
+
 pub fn chr_grab() -> t.Parser(String) {
   t.Parser(fn(state) { chr_grab_helper(state) })
 }
@@ -487,5 +491,18 @@ fn chr_grab_helper(
     Error(_) -> Error("Error: expected char, found none")
     Ok(#(char, rest)) ->
       t.ParseResult(res: char, rem: rest, idx: state.idx + 1) |> Ok
+  }
+}
+
+fn wht_spc_helper(state: t.ParserState) -> Result(t.ParseResult(String), String) {
+  let err = "Error: none whitespace character detected"
+  case chr_grab_helper(state) {
+    Error(e) -> Error(e)
+    Ok(result) -> {
+      case s.trim(result.res) == "" {
+        False -> err |> Error
+        True -> result |> Ok
+      }
+    }
   }
 }
