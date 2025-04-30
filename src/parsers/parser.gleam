@@ -12,6 +12,10 @@ pub fn num() -> t.Parser(Int) {
   t.Parser(fn(state) { num_helper(s.to_graphemes(state.str), [], state) })
 }
 
+pub fn chr_grab() -> t.Parser(String) {
+  t.Parser(fn(state) { chr_grab_helper(state) })
+}
+
 pub fn dgt(digit: Int) -> t.Parser(Int) {
   digit_panicker(digit)
   t.Parser(fn(state) { dgt_helper(digit, state) })
@@ -64,6 +68,10 @@ pub fn sep_by(item: t.Parser(a), sep: t.Parser(b)) -> t.Parser(List(a)) {
 
 pub fn bind(parser: t.Parser(a), fnc: fn(a) -> t.Parser(b)) -> t.Parser(b) {
   t.Parser(fn(state) { bind_helper(parser, state, fnc) })
+}
+
+pub fn sat_pred(parser: t.Parser(a), fnc: fn(a) -> Bool) -> t.Parser(List(a)) {
+  t.Parser(fn(state) { sat_pred_helper(parser, state, fnc, []) })
 }
 
 pub fn btwn(fst: t.Parser(a), mid: t.Parser(b), lst: t.Parser(c)) -> t.Parser(b) {
@@ -296,19 +304,19 @@ fn mny_chc_helper(
 
 fn mny_helper(
   parser: t.Parser(a),
-  accuulator: List(a),
+  accumulator: List(a),
   state: t.ParserState,
 ) -> Result(t.ParseResult(List(a)), String) {
   let t.Parser(p_fn) = parser
   case p_fn(state) {
     Ok(t.ParseResult(res, rem, idx)) -> {
-      let new_acc = prp(accuulator, res)
+      let new_acc = prp(accumulator, res)
       let new_state = t.ParserState(rem, idx)
       mny_helper(parser, new_acc, new_state)
     }
     Error(_) ->
       t.ParseResult(
-        res: list.reverse(accuulator),
+        res: list.reverse(accumulator),
         rem: state.str,
         idx: state.idx,
       )
@@ -424,5 +432,60 @@ fn lazy_helper(
   case p_fn(state) {
     Error(e) -> e |> Error
     Ok(k) -> k |> Ok
+  }
+}
+
+fn sat_pred_helper(
+  parser: t.Parser(a),
+  state: t.ParserState,
+  fnc: fn(a) -> Bool,
+  accumulator: List(a),
+) -> Result(t.ParseResult(List(a)), String) {
+  let t.Parser(p_fn) = parser
+  case s.length(state.str) == 0 {
+    True ->
+      t.ParseResult(
+        res: list.reverse(accumulator),
+        rem: state.str,
+        idx: state.idx,
+      )
+      |> Ok
+    False -> {
+      case p_fn(state) {
+        Error(_) ->
+          t.ParseResult(
+            res: list.reverse(accumulator),
+            rem: state.str,
+            idx: state.idx,
+          )
+          |> Ok
+        Ok(t.ParseResult(res, rem, idx)) -> {
+          case fnc(res) {
+            False ->
+              t.ParseResult(
+                res: list.reverse(accumulator),
+                rem: state.str,
+                idx: state.idx,
+              )
+              |> Ok
+            True -> {
+              let new_state = t.ParserState(str: rem, idx: idx)
+              let new_acc = prp(accumulator, res)
+              sat_pred_helper(parser, new_state, fnc, new_acc)
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+fn chr_grab_helper(
+  state: t.ParserState,
+) -> Result(t.ParseResult(String), String) {
+  case s.pop_grapheme(state.str) {
+    Error(_) -> Error("Error: expected char, found none")
+    Ok(#(char, rest)) ->
+      t.ParseResult(res: char, rem: rest, idx: state.idx + 1) |> Ok
   }
 }
