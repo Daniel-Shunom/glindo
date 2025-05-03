@@ -88,6 +88,12 @@ pub fn run(fnc: t.Parser(a), str: String) -> Result(t.ParseResult(a), String) {
   p_fn(t.ParserState(str: str, idx: 0))
 }
 
+pub fn tok(parser: t.Parser(a)) -> t.Parser(a) {
+  bind(wht_space(), fn(_) {
+    bind(parser, fn(res) { map(wht_space(), fn(_) { res }) })
+  })
+}
+
 //================================================================================================
 //                     MEMBER FUNCTIONS
 //================================================================================================
@@ -112,7 +118,7 @@ fn string_panicker(str: String) -> Nil {
   }
 }
 
-fn string_to_int(x: List(String)) -> Int {
+pub fn list_string_to_int(x: List(String)) -> Int {
   let assert Ok(number) = int.parse(s.concat(list.reverse(x)))
   number
 }
@@ -230,7 +236,11 @@ fn num_helper(
           case acc {
             [] -> Error("no digit captured")
             _ ->
-              t.ParseResult(string_to_int(acc), state.str, idx(state.idx, acc))
+              t.ParseResult(
+                list_string_to_int(acc),
+                state.str,
+                idx(state.idx, acc),
+              )
               |> Ok
           }
         }
