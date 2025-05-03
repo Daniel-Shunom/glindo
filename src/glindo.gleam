@@ -1,24 +1,17 @@
-import gleam/int
 import gleam/io
-import parsers/parser as p
-import parsers/types as t
+import json/glindo_json as g
 
 pub fn main() {
-  let first = p.str("{")
-  let mid = p.str("ansj")
-  let last = p.str("}")
-  let d1 = p.dgt(6)
-  let d2 = p.dgt(8)
-  let d3 = p.dgt(1)
-  let sepr = p.btwn(first, mid, last)
-  let _dgt_combinator = p.chc_of([d1, d2, d3])
+  let input = "{\"name\": \"Alice\", \"age\": 25, \"city\": \"New York\"}"
 
-  case p.run(sepr, "{an:7jsd789ansj 6jlsj ejesana}") {
-    Error(e) -> io.println(e)
-    Ok(t.ParseResult(res, _, idx)) -> {
-      //p.print_array_string(res)
-      io.println(res)
-      io.println(int.to_string(idx))
+  case g.parse_json(input) {
+    Error(error) -> {
+      io.println(error)
+      error
+    }
+    Ok(val) -> {
+      io.println(g.print_json(val))
+      g.print_json(val)
     }
   }
 }
