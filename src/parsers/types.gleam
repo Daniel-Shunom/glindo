@@ -1,12 +1,3 @@
-pub type JsonValue {
-  JsonBool(Bool)
-  JsonNull
-  JsonString(String)
-  JsonNumber(Int)
-  JsonArray(List(JsonValue))
-  JsonObject(List(#(String, JsonValue)))
-}
-
 pub type T {
   CurlyOpen
   CurlyClose
@@ -18,10 +9,6 @@ pub type T {
   Num(Int)
   Bool(Bool)
   Null
-}
-
-pub type JsonError(str) {
-  JsonError(message: str)
 }
 
 pub type Parser(a) {
