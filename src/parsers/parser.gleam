@@ -34,6 +34,10 @@ pub fn str(pattern: String) -> t.Parser(String) {
   t.Parser(fn(state) { str_helper(pattern, state) })
 }
 
+pub fn prefix_str(pattern: String) -> t.Parser(String) {
+  t.Parser(fn(state) { prefix_str_helper(pattern, state) })
+}
+
 pub fn peek_fwd(parser: t.Parser(a)) -> t.Parser(a) {
   t.Parser(fn(state) { peek_fwd_helper(parser, state) })
 }
@@ -48,6 +52,10 @@ pub fn mny_of(parser: t.Parser(a)) -> t.Parser(List(a)) {
 
 pub fn chc_of(parserlist: List(t.Parser(a))) -> t.Parser(a) {
   t.Parser(fn(state) { chc_helper(parserlist, state) })
+}
+
+pub fn chc_opt(parserlist: List(t.Parser(a))) -> t.Parser(a) {
+  t.Parser(fn(state) { chc_opt_helper(parserlist, state, []) })
 }
 
 pub fn opt_of(parser: t.Parser(a)) -> t.Parser(opt.Option(a)) {
@@ -70,6 +78,10 @@ pub fn sep_by(item: t.Parser(a), sep: t.Parser(b)) -> t.Parser(List(a)) {
   t.Parser(fn(state) { sep_by_helper(item, sep, [], state) })
 }
 
+pub fn skip(parser1: t.Parser(a), parser2: t.Parser(b)) -> t.Parser(b) {
+  bind(parser1, fn(_) { parser2 })
+}
+
 pub fn bind(parser: t.Parser(a), fnc: fn(a) -> t.Parser(b)) -> t.Parser(b) {
   t.Parser(fn(state) { bind_helper(parser, state, fnc) })
 }
@@ -89,9 +101,10 @@ pub fn run(fnc: t.Parser(a), str: String) -> Result(t.ParseResult(a), String) {
 }
 
 pub fn tok(parser: t.Parser(a)) -> t.Parser(a) {
-  bind(wht_space(), fn(_) {
-    bind(parser, fn(res) { map(wht_space(), fn(_) { res }) })
-  })
+  use _ <- bind(wht_space())
+  use res <- bind(parser)
+  use _ <- map(wht_space())
+  res
 }
 
 //================================================================================================
@@ -173,6 +186,22 @@ fn str_helper(
       )
       |> Ok
     }
+  }
+}
+
+fn prefix_str_helper(
+  pattern: String,
+  state: t.ParserState,
+) -> Result(t.ParseResult(String), String) {
+  case s.starts_with(state.str, pattern) {
+    False -> { "Prefix" <> pattern <> "not found" } |> Error
+    True ->
+      t.ParseResult(
+        res: pattern,
+        rem: s.drop_start(state.str, s.length(pattern)),
+        idx: state.idx + s.length(pattern),
+      )
+      |> Ok
   }
 }
 
@@ -285,6 +314,33 @@ fn chc_helper(
       case p_fn(state) {
         Error(_) -> chc_helper(rest, state)
         Ok(result) -> result |> Ok
+      }
+    }
+  }
+}
+
+fn chc_opt_helper(
+  l_o_p: List(t.Parser(a)),
+  state: t.ParserState,
+  p_failed: List(t.Parser(a)),
+) -> Result(t.ParseResult(a), String) {
+  case l_o_p {
+    [] -> "No suitable parser found" |> Error
+    [t.Parser(p_fn), ..rest] -> {
+      case p_fn(state) {
+        Error(_) ->
+          chc_opt_helper(rest, state, list.append(p_failed, [t.Parser(p_fn)]))
+        Ok(t.ParseResult(res, rem, idx)) ->
+          case
+            chc_opt_helper(
+              list.append(l_o_p, p_failed),
+              t.ParserState(str: rem, idx: idx),
+              p_failed,
+            )
+          {
+            Error(_) -> Ok(t.ParseResult(res, rem, idx))
+            Ok(result) -> Ok(result)
+          }
       }
     }
   }
