@@ -24,10 +24,14 @@ pub type CSV {
 fn csv_quoted_string() -> t.Parser(CSVal) {
   p.btwn(
     p.tok(p.prefix_str("\"")),
-    p.sat_pred(p.chr_grab(), fn(x) { x != "\"" && x != "\n" && x != "\r" }),
+    p.chc_of([
+      p.sat_pred(p.chr_grab(), fn(x) { x != "\"" && x != "\n" && x != "\r" }),
+      p.map(p.prefix_str("\"\""), fn(x) { [x] }),
+    ]),
     p.tok(p.prefix_str("\"")),
   )
   |> p.map(s.concat)
+  |> p.map(s.trim)
   |> p.map(fn(x) { CSVStr(x) })
 }
 
@@ -35,31 +39,42 @@ fn csv_unquoted_string() -> t.Parser(CSVal) {
   p.chr_grab()
   |> p.sat_pred(fn(x) { x != "," && x != "\n" && x != "\r" })
   |> p.map(s.concat)
+  |> p.map(s.trim)
   |> p.map(fn(x) { CSVStr(x) })
 }
 
-pub fn csv_string() -> t.Parser(CSVal) {
+fn csv_string() -> t.Parser(CSVal) {
   [csv_quoted_string(), csv_unquoted_string()]
   |> p.chc_of()
 }
 
-pub fn csv_num() -> t.Parser(CSVal) {
+fn csv_num() -> t.Parser(CSVal) {
   use num <- p.map(p.num())
   CSVInt(num)
 }
 
-pub fn csv_record() -> t.Parser(CSVRecord) {
+fn filter_csval(val: CSVal) -> Bool {
+  val != CSVStr("\r\n")
+}
+
+fn csv_record() -> t.Parser(CSVRecord) {
   [csv_string(), csv_num()]
   |> p.chc_of()
   |> p.sep_by(p.prefix_str(","))
+  |> p.map(fn(x) { list.filter(x, filter_csval) })
   |> p.map(fn(rec) { Field(1, rec) })
 }
 
-//TODO -> Currently parses  only one record
-pub fn csv() -> t.Parser(CSV) {
+//TODO -> Fix escape key bug
+fn csv() -> t.Parser(CSV) {
   csv_record()
   |> p.sep_by(
-    [p.tok(p.prefix_str("\r\n")), p.tok(p.prefix_str("\n"))]
+    [
+      p.tok(p.prefix_str("\r\n")),
+      p.tok(p.prefix_str("\n")),
+      //TODO -> fix CLRF keys bug
+      p.tok(p.prefix_str("eof")),
+    ]
     |> p.chc_of()
     |> p.tok(),
   )
@@ -75,6 +90,11 @@ pub fn parse_csv(str: String) -> Nil {
   }
 }
 
+//TODO -> flesh out this csv query 
+pub fn query_csv(csv csv: CSV, row row: Int, column col: Int) -> CSVal {
+  todo
+}
+
 fn print_csval(val: CSVal) -> Nil {
   case val {
     CSVStr(str) -> io.print("(" <> str <> ")" <> ",\t")
@@ -85,7 +105,7 @@ fn print_csval(val: CSVal) -> Nil {
 
 fn print_list_csval(lval: List(CSVal)) -> Nil {
   case lval {
-    [] -> "\nNo csv values found" |> io.println()
+    [] -> Nil
     [val, ..rest] -> {
       print_csval(val)
       print_list_csval(rest)
@@ -93,13 +113,15 @@ fn print_list_csval(lval: List(CSVal)) -> Nil {
   }
 }
 
-pub fn format_csv(csval: CSV) -> Nil {
+fn format_csv(csval: CSV) -> Nil {
   case csval {
-    CSV([]) -> "No records found" |> io.println()
+    CSV([]) -> "No more records found" |> io.println()
     CSV([Field(_, list_vals), ..list_field]) -> {
       let CSV(k) = csval
+      //TODO -> fix the temp record indexing
+      io.print(i.to_string(list.length(k)) <> ". |\t")
       print_list_csval(list_vals)
-      io.print("No. of fields: " <> i.to_string(list.length(k)) <> "\n")
+      io.print("\n")
       format_csv(CSV(list_field))
     }
   }
