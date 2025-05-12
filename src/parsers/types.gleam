@@ -1,16 +1,3 @@
-pub type T {
-  CurlyOpen
-  CurlyClose
-  BracketOpen
-  BracketClose
-  Colon
-  Comma
-  Str(String)
-  Num(Int)
-  Bool(Bool)
-  Null
-}
-
 pub type Parser(a) {
   Parser(fn(ParserState) -> Result(ParseResult(a), String))
 }
