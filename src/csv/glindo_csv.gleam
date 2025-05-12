@@ -1,11 +1,11 @@
+//TODO -> add file handling prop to module
 import gleam/int as i
 import gleam/io
 import gleam/list
+import gleam/option as opt
 import gleam/string as s
 import parsers/parser as p
 import parsers/types as t
-
-//import simplifile as fs
 
 pub type CSVal {
   CSVInt(Int)
@@ -25,7 +25,7 @@ fn csv_quoted_string() -> t.Parser(CSVal) {
   p.btwn(
     p.tok(p.prefix_str("\"")),
     p.chc_of([
-      p.sat_pred(p.chr_grab(), fn(x) { x != "\"" && x != "\n" && x != "\r" }),
+      p.sat_pred(p.chr_grab(), fn(x) { x != "\"" }),
       p.map(p.prefix_str("\"\""), fn(x) { [x] }),
     ]),
     p.tok(p.prefix_str("\"")),
@@ -37,7 +37,7 @@ fn csv_quoted_string() -> t.Parser(CSVal) {
 
 fn csv_unquoted_string() -> t.Parser(CSVal) {
   p.chr_grab()
-  |> p.sat_pred(fn(x) { x != "," && x != "\n" && x != "\r" })
+  |> p.sat_pred(fn(x) { x != "," && x != "\r\n" && x != "\n" })
   |> p.map(s.concat)
   |> p.map(s.trim)
   |> p.map(fn(x) { CSVStr(x) })
@@ -65,34 +65,39 @@ fn csv_record() -> t.Parser(CSVRecord) {
   |> p.map(fn(rec) { Field(1, rec) })
 }
 
-//TODO -> Fix escape key bug
 fn csv() -> t.Parser(CSV) {
   csv_record()
   |> p.sep_by(
-    [
-      p.tok(p.prefix_str("\r\n")),
-      p.tok(p.prefix_str("\n")),
-      //TODO -> fix CLRF keys bug
-      p.tok(p.prefix_str("eof")),
-    ]
+    [p.tok(p.prefix_str("\r\n")), p.tok(p.prefix_str("\n"))]
     |> p.chc_of()
     |> p.tok(),
   )
   |> p.map(fn(csv) { CSV(csv) })
 }
 
-pub fn parse_csv(str: String) -> Nil {
+pub fn print_csv(str: String) -> Nil {
   case p.run(csv(), str) {
     Error(err) -> err |> io.println()
     Ok(t.ParseResult(res, ..)) -> {
-      format_csv(res)
+      format_csv(res, 1)
     }
   }
 }
 
-//TODO -> flesh out this csv query 
-pub fn query_csv(csv csv: CSV, row row: Int, column col: Int) -> CSVal {
-  todo
+pub fn get_csv(str: String) -> opt.Option(CSV) {
+  case p.run(csv(), str) {
+    Ok(csv) -> opt.Some(csv.res)
+    Error(_) -> opt.None
+  }
+}
+
+pub fn query_csv(csv csv: CSV, row row: Int, column col: Int) -> Nil {
+  let err = "Error: value not found"
+  let CSV(csv_row) = csv
+  let rec = opt.unwrap(get_nth(csv_row, row), Field(0, []))
+  opt.unwrap(get_nth(rec.records, col), CSVStr(err))
+  |> print_csval()
+  io.println("\n\n")
 }
 
 fn print_csval(val: CSVal) -> Nil {
@@ -113,16 +118,28 @@ fn print_list_csval(lval: List(CSVal)) -> Nil {
   }
 }
 
-fn format_csv(csval: CSV) -> Nil {
+fn format_csv(csval: CSV, line: Int) -> Nil {
   case csval {
     CSV([]) -> "No more records found" |> io.println()
     CSV([Field(_, list_vals), ..list_field]) -> {
-      let CSV(k) = csval
-      //TODO -> fix the temp record indexing
-      io.print(i.to_string(list.length(k)) <> ". |\t")
+      let len = list.length(list_vals) |> i.to_string()
+      io.print(i.to_string(line) <> ". |\t")
       print_list_csval(list_vals)
-      io.print("\n")
-      format_csv(CSV(list_field))
+      io.print("\t|" <> len <> " vals\n")
+      format_csv(CSV(list_field), line + 1)
     }
+  }
+}
+
+fn get_nth(list: List(a), idx: Int) -> opt.Option(a) {
+  case list.length(list) >= idx {
+    False -> opt.None
+    True ->
+      case list, idx {
+        [], _ -> opt.None
+        [head, ..], 1 -> opt.Some(head)
+        [_, ..], i if i < 1 -> opt.None
+        [_, ..rest], i -> get_nth(rest, i - 1)
+      }
   }
 }
