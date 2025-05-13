@@ -39,7 +39,7 @@ gleam add glindo
 
 # In your gleam.toml
 [dependencies]
-glindo = ">= 0.1.0"
+glindo = ">= 1.0.0"
 
 
 ## 🚀 Quick Start
