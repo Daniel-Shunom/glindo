@@ -1,8 +1,12 @@
+//===============================================================================================================================
+//                                 THIS IS AN EXAMPLE/DEMO AND NOT THE FUNCTIONAL BIT OF CODE
+//===============================================================================================================================
+
 import gleam/int
 import gleam/list
 import gleam/string as s
-import parsers/parser as p
-import parsers/types as t
+import glindo/parser as p
+import glindo/types as t
 
 pub type JsonValue {
   JsonNull

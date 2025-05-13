@@ -4,8 +4,8 @@ import gleam/option as opt
 import gleam/string
 import gleeunit
 import gleeunit/should
-import parsers/parser as p
-import parsers/types as t
+import glindo/parsers as p
+import glindo/types as t
 
 pub fn main() {
   gleeunit.main()

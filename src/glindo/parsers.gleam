@@ -22,7 +22,7 @@ import gleam/io
 import gleam/list
 import gleam/option as opt
 import gleam/string as s
-import parsers/types as t
+import glindo/types as t
 
 //================================================================================================
 //                     PARSER FUNCTIONS

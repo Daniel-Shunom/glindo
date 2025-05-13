@@ -4,8 +4,8 @@ import gleam/io
 import gleam/list
 import gleam/option as opt
 import gleam/string as s
-import parsers/parser as p
-import parsers/types as t
+import glindo/parsers as p
+import glindo/types
 
 pub type CSVal {
   CSVInt(Int)
@@ -21,7 +21,7 @@ pub type CSV {
   CSV(value: List(CSVRecord))
 }
 
-fn csv_quoted_string() -> t.Parser(CSVal) {
+fn csv_quoted_string() -> types.Parser(CSVal) {
   p.btwn(
     p.tok(p.prefix_str("\"")),
     p.chc_of([
@@ -35,7 +35,7 @@ fn csv_quoted_string() -> t.Parser(CSVal) {
   |> p.map(fn(x) { CSVStr(x) })
 }
 
-fn csv_unquoted_string() -> t.Parser(CSVal) {
+fn csv_unquoted_string() -> types.Parser(CSVal) {
   p.chr_grab()
   |> p.sat_pred(fn(x) { x != "," && x != "\r\n" && x != "\n" })
   |> p.map(s.concat)
@@ -43,12 +43,12 @@ fn csv_unquoted_string() -> t.Parser(CSVal) {
   |> p.map(fn(x) { CSVStr(x) })
 }
 
-fn csv_string() -> t.Parser(CSVal) {
+fn csv_string() -> types.Parser(CSVal) {
   [csv_quoted_string(), csv_unquoted_string()]
   |> p.chc_of()
 }
 
-fn csv_num() -> t.Parser(CSVal) {
+fn csv_num() -> types.Parser(CSVal) {
   use num <- p.map(p.num())
   CSVInt(num)
 }
@@ -57,7 +57,7 @@ fn filter_csval(val: CSVal) -> Bool {
   val != CSVStr("\r\n")
 }
 
-fn csv_record() -> t.Parser(CSVRecord) {
+fn csv_record() -> types.Parser(CSVRecord) {
   [csv_string(), csv_num()]
   |> p.chc_of()
   |> p.sep_by(p.prefix_str(","))
@@ -65,7 +65,7 @@ fn csv_record() -> t.Parser(CSVRecord) {
   |> p.map(fn(rec) { Field(1, rec) })
 }
 
-fn csv() -> t.Parser(CSV) {
+fn csv() -> types.Parser(CSV) {
   csv_record()
   |> p.sep_by(
     [p.tok(p.prefix_str("\r\n")), p.tok(p.prefix_str("\n"))]
@@ -78,7 +78,7 @@ fn csv() -> t.Parser(CSV) {
 pub fn print_csv(str: String) -> Nil {
   case p.run(csv(), str) {
     Error(err) -> err |> io.println()
-    Ok(t.ParseResult(res, ..)) -> {
+    Ok(types.ParseResult(res, ..)) -> {
       format_csv(res, 1)
     }
   }
