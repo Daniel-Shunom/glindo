@@ -91,7 +91,8 @@ pub fn parse_json(string: String) -> Result(JsonValue, String) {
   }
 }
 
-pub fn print_json(jval: JsonValue) -> String {
+pub fn print_json(jval: JsonValue, level: Int) -> String {
+  let pad = indent(level)
   case jval {
     JsonNull -> "null"
     JsonBool(True) -> "True"
@@ -100,19 +101,30 @@ pub fn print_json(jval: JsonValue) -> String {
     JsonNumber(num) -> int.to_string(num)
     JsonArray(elems) -> {
       let inner =
-        list.map(elems, fn(val) { print_json(val) })
-        |> s.join(", ")
-      "[\n" <> inner <> "\n]"
+        list.map(elems, fn(val) {
+          indent(level + 2) <> print_json(val, level + 2)
+        })
+        |> s.join(",\n")
+      "[\n" <> inner <> "\n" <> pad <> "]"
     }
     JsonObject(fields) -> {
       let pairs =
         fields
         |> list.map(fn(kvp) {
           let #(key, value) = kvp
-          "  \"" <> key <> "\"" <> " : " <> print_json(value)
+          indent(level + 2)
+          <> "\""
+          <> key
+          <> "\""
+          <> " : "
+          <> print_json(value, level + 2)
         })
-        |> s.join(", \n")
-      "{\n" <> pairs <> "\n}"
+        |> s.join(",\n")
+      "{\n" <> pairs <> "\n" <> pad <> "}"
     }
   }
+}
+
+fn indent(level: Int) -> String {
+  s.repeat(" ", level)
 }
