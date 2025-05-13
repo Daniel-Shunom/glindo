@@ -6,7 +6,7 @@ version = "1.0.0"
 #
 description = "A simple parser combinator library for building composable parsers"
 licences = ["Apache-2.0"]
-repository = { type = "github", user = "Daniel-Shunom", repo = "glindo" }
+repository = { type = "github", user = "daniel-shunom", repo = "glindo" }
 # links = [{ title = "Website", href = "" }]
 #
 # For a full reference of all the available options, you can have a look at
