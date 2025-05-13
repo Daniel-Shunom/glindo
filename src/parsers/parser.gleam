@@ -50,7 +50,7 @@ pub fn num() -> t.Parser(Int) {
 /// at the beginning of a string and returns a `Result(ParseResult(String), String)`
 /// 
 /// When there is no white space character, wht_spc simply returns
-/// and `Ok(ParseResult(String))` with no updates to the oriinal ParseState variables.
+/// and `Ok(ParseResult(String))` with no updates to the original ParseState variables.
 /// 
 /// ## Examples
 /// 
@@ -158,7 +158,7 @@ pub fn prefix_str(pattern: String) -> t.Parser(String) {
   t.Parser(fn(state) { prefix_str_helper(pattern, state) })
 }
 
-/// Takes in a parser and ooks ahead a for the result of the successfully 
+/// Takes in a parser and looks ahead for the result of the successfully 
 /// ran parser value and returns a `Result(ParseResult(a), String)`.
 /// 
 /// It is generic and can take in any `Parser(a)` kind.
