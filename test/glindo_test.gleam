@@ -39,7 +39,7 @@ pub fn num_ok_test() {
 }
 
 pub fn num_error_test() {
-  let msg = "Error: no digit captured"
+  let msg = "Error: no number captured"
   p.run(p.num(), "abc123876")
   |> should.equal(Error(msg))
 }
@@ -61,7 +61,7 @@ pub fn str_ok_test() {
 }
 
 pub fn str_error_test() {
-  let msg = "Error: did not find 'hal' in 'mashallah'"
+  let msg = "Error: given string does not start with 'hal'"
   p.run(p.str("hal"), "mashallah")
   |> should.equal(Error(msg))
 }
@@ -86,9 +86,9 @@ pub fn peek_fwd_ok_test() {
 }
 
 pub fn peek_fwd_error_test() {
-  let msg = "Error: did not find 'rubber' in 'latex is somewhat rubber'"
+  let msg = "Error: given string does not start with 'rubber'"
   p.peek_fwd(p.str("rubber"))
-  |> p.run("latex is somewhat rubber")
+  |> p.run("Bungee gum is somewhat rubber")
   |> should.equal(Error(msg))
 }
 
@@ -214,7 +214,7 @@ pub fn skip_ok_test() {
 }
 
 pub fn skip_error_test() {
-  let msg = "Error: did not find 'race' in 'boats are cooler'"
+  let msg = "Error: given string does not start with 'race'"
   p.skip(p.str("race"), p.wht_space())
   |> p.run("boats are cooler")
   |> should.equal(Error(msg))
@@ -228,7 +228,7 @@ pub fn bind_ok_test() {
 }
 
 pub fn bind_error_test() {
-  let msg = "Error: did not find 'Chicken' in 'Lobster-farm'"
+  let msg = "Error: given string does not start with 'Chicken'"
   p.str("Chicken")
   |> p.bind(fn(_) { p.chr_grab() })
   |> p.run("Lobster-farm")
