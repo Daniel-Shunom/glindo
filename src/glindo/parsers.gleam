@@ -423,26 +423,23 @@ pub fn bind(parser: t.Parser(a), fnc: fn(a) -> t.Parser(b)) -> t.Parser(b) {
 }
 
 /// This generic combinator over type `a` takes a parser of type `Parser(a)` and a boolean 
-/// function that checks if a given predicate has been satisfied. This parser will be repeated 
-/// until the predicate returns false.
-/// 
-/// This parser always succeeds with return type of `Ok(ParseResult(List(a)))`.
-/// 
+/// function. The parser result will only be returned for values that satisfy the predicate.
+///
 /// ## Example
 /// 
 /// ```gleam
-/// sat_pred(chr_grab(), fn(chr) { chr != "b" })
-/// |> run("cry-baby")
-/// // -> Ok(ParseResult(res: ["c", "r", "y", "-"], rem: "baby", idx: 4))
+/// sat_pred(chr_grab(), fn(chr) { chr == "bob" })
+/// |> run("bobbit is nice")
+/// // -> Ok(ParseResult(res: "bob", rem: "bit is nice", idx: 3))
 /// ```
 /// 
 /// ```gleam
 /// sat_pred(num(), fn(num) { num < 5 })
 /// |> run("6 cold cans of soda")
-/// // -> Ok(ParseResult(res: [], rem: "6 cold cans of soda", idx: 0))
+/// // -> Error("Error: unsatisfied predicate") 
 /// ```
-pub fn sat_pred(parser: t.Parser(a), fnc: fn(a) -> Bool) -> t.Parser(List(a)) {
-  t.Parser(fn(state) { sat_pred_helper(parser, state, fnc, []) })
+pub fn sat_pred(parser: t.Parser(a), fnc: fn(a) -> Bool) -> t.Parser(a) {
+  t.Parser(fn(state) { sat_pred_helper(parser, state, fnc) })
 }
 
 /// This generic combinator takes in three parsers generic over type `a`, `b`, `c`, and returns 
@@ -899,42 +896,17 @@ fn sat_pred_helper(
   parser: t.Parser(a),
   state: t.ParserState,
   fnc: fn(a) -> Bool,
-  accumulator: List(a),
-) -> Result(t.ParseResult(List(a)), String) {
+) -> Result(t.ParseResult(a), String) {
+  let err_msg = "Error: unsatisfied predicate"
   let t.Parser(p_fn) = parser
-  case s.length(state.str) == 0 {
-    True ->
-      t.ParseResult(
-        res: list.reverse(accumulator),
-        rem: state.str,
-        idx: state.idx,
-      ) |> Ok
-    False -> {
-      case p_fn(state) {
-        Error(_) ->
-          t.ParseResult(
-            res: list.reverse(accumulator),
-            rem: state.str,
-            idx: state.idx,
-          ) |> Ok
-        Ok(t.ParseResult(res, rem, idx)) -> {
-          case fnc(res) {
-            False ->
-              t.ParseResult(
-                res: list.reverse(accumulator),
-                rem: state.str,
-                idx: state.idx,
-              ) |> Ok
-            True -> {
-              let new_state = t.ParserState(str: rem, idx: idx)
-              let new_acc = prp(accumulator, res)
-              sat_pred_helper(parser, new_state, fnc, new_acc)
-            }
-          }
-        }
+  case p_fn(state) {
+    Error(e) -> Error(e)
+    Ok(t.ParseResult(res, rem, idx)) -> 
+      case fnc(res) {
+        True -> t.ParseResult(res, rem, idx) |> Ok
+        False -> err_msg |> Error 
       }
-    }
-  }
+  } 
 }
 
 fn chr_grab_helper(
