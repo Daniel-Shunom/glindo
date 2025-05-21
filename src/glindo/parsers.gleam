@@ -908,8 +908,7 @@ fn sat_pred_helper(
         res: list.reverse(accumulator),
         rem: state.str,
         idx: state.idx,
-      )
-      |> Ok
+      ) |> Ok
     False -> {
       case p_fn(state) {
         Error(_) ->
@@ -917,8 +916,7 @@ fn sat_pred_helper(
             res: list.reverse(accumulator),
             rem: state.str,
             idx: state.idx,
-          )
-          |> Ok
+          ) |> Ok
         Ok(t.ParseResult(res, rem, idx)) -> {
           case fnc(res) {
             False ->
@@ -926,8 +924,7 @@ fn sat_pred_helper(
                 res: list.reverse(accumulator),
                 rem: state.str,
                 idx: state.idx,
-              )
-              |> Ok
+              ) |> Ok
             True -> {
               let new_state = t.ParserState(str: rem, idx: idx)
               let new_acc = prp(accumulator, res)
