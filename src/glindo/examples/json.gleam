@@ -34,6 +34,7 @@ pub fn json_string() -> t.Parser(JsonValue) {
   let inner =
     p.chr_grab()
     |> p.sat_pred(fn(chr) { chr != "\"" })
+    |> p.mny_of()
     |> p.map(fn(lstr) { s.concat(lstr) })
   p.btwn(p.tok(p.prefix_str("\"")), inner, p.tok(p.prefix_str("\"")))
   |> p.map(fn(str) { JsonString(str) })

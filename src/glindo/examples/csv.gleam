@@ -25,7 +25,8 @@ fn csv_quoted_string() -> types.Parser(CSVal) {
   p.btwn(
     p.tok(p.prefix_str("\"")),
     p.chc_of([
-      p.sat_pred(p.chr_grab(), fn(x) { x != "\"" }),
+      p.sat_pred(p.chr_grab(), fn(x) { x != "\"" })
+      |> p.mny_of(),
       p.map(p.prefix_str("\"\""), fn(x) { [x] }),
     ]),
     p.tok(p.prefix_str("\"")),
@@ -38,6 +39,7 @@ fn csv_quoted_string() -> types.Parser(CSVal) {
 fn csv_unquoted_string() -> types.Parser(CSVal) {
   p.chr_grab()
   |> p.sat_pred(fn(x) { x != "," && x != "\r\n" && x != "\n" })
+  |> p.mny_of()
   |> p.map(s.concat)
   |> p.map(s.trim)
   |> p.map(fn(x) { CSVStr(x) })
