@@ -27,7 +27,7 @@ Glindo is a **functional parser-combinator** library for Gleam that makes it eas
 - **Pure-FP Style**  
   - No mutable state—everything is threaded through combinators  
   - Lazy parsing for recursive grammars  
-  - Customizable error messages  
+  - Distinct error messages  
 
 ---
 
@@ -89,7 +89,7 @@ pub fn main() {
 | `lazy`           | `(fn() -> Parser(a)) -> Parser(a)`                                                     | Deferred parser for recursion                                |
 | `tok`            | `Parser(a) -> Parser(a)`                                                               | Skip leading/trailing whitespace around a parser             |
 
-See the [HexDocs API Reference]() for full details and examples.
+See the [HexDocs API Reference](https://hexdocs.pm/glindo/) for full details and examples.
 
 
 ## 🛠️ Development
@@ -112,7 +112,7 @@ Please follow the Gleam style guide and include documentation comments for any n
 
 
 # 📄 License
-This project is released under the [MIT License](https://opensource.org/license/mit).
+This project is released under the [Apache License](https://opensource.org/license/mit).
 Feel free to use, modify, and distribute as you see fit.
 
 
