@@ -428,7 +428,9 @@ pub fn bind(parser: t.Parser(a), fnc: fn(a) -> t.Parser(b)) -> t.Parser(b) {
 /// ## Example
 /// 
 /// ```gleam
-/// sat_pred(chr_grab(), fn(chr) { chr == "bob" })
+/// seq_of([chr("b"), chr("o"), chr("b")])
+/// |> map(fn(list_chr){ string.concat(list_chr) })
+/// |> sat_pred(fn(chr) { chr == "bob" })
 /// |> run("bobbit is nice")
 /// // -> Ok(ParseResult(res: "bob", rem: "bit is nice", idx: 3))
 /// ```
