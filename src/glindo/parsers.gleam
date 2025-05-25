@@ -5,17 +5,17 @@
 //// 
 //// All parsers are curried functions that return a 
 //// function that takes in the input state. For 
-//// convenience, the run method can be used to build the
-//// state and run the function
+//// convenience, the `run()` method can be used to build the
+//// state and `run()` the function
 //// 
 //// Unless you are composing parsers or performing any 
-//// other activity, It is better to use the run() method
+//// other activity, It is better to use the `run()` method
 //// with the curried function.
 //// 
-//// Parsers can either be run by themselves, or called 
-//// using the run() function. The run function takes in
-//// a the returned parser function and the string to 
-//// parse with
+//// Parsers can either be run by themselves with a constructed `ParserState(a)`,
+//// or called using the `run()` function which will build the `ParserState(a)` for 
+//// you. The `run()` function takes in the returned parser function and the 
+//// string to parse with and has the signature `run(Parser(a), String)`
 
 import gleam/int
 import gleam/io
