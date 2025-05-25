@@ -191,6 +191,7 @@ pub fn sep_by_ok_test() {
   let val = ["eggs", " bacon", " cheese", " are good"]
   p.chr_grab()
   |> p.sat_pred(fn(x) { x != "," })
+  |> p.mny_of()
   |> p.map(string.concat)
   |> p.sep_by(p.str(","))
   |> p.run("eggs, bacon, cheese, are good")
@@ -201,6 +202,7 @@ pub fn sep_by_error_test() {
   let str = "eggs bacon cheese are good"
   p.chr_grab()
   |> p.sat_pred(fn(x) { x != "," })
+  |> p.mny_of()
   |> p.map(string.concat)
   |> p.sep_by(p.str(","))
   |> p.run(str)
@@ -236,24 +238,25 @@ pub fn bind_error_test() {
 }
 
 pub fn sat_pred_ok_test() {
-  let val = ["c", "r", "y", "-"]
-  p.chr_grab()
-  |> p.sat_pred(fn(x) { x != "b" })
-  |> p.run("cry-baby")
-  |> should.equal(Ok(t.ParseResult(val, "baby", 4)))
+  p.str("bob")
+  |> p.sat_pred(fn(x) { x != "max" })
+  |> p.run("bobbit is nice")
+  |> should.equal(Ok(t.ParseResult("bob", "bit is nice", 3)))
 }
 
 pub fn sat_pred_error_test() {
+  let err_msg = "Error: unsatisfied predicate"
   p.num()
   |> p.sat_pred(fn(x) { x != 5 })
-  |> p.run("cry-baby")
-  |> should.equal(Ok(t.ParseResult([], "cry-baby", 0)))
+  |> p.run("5-cry babies")
+  |> should.equal(Error(err_msg))
 }
 
 pub fn btwn_ok1_test() {
   let new_p =
     p.chr_grab()
     |> p.sat_pred(fn(x) { x != "{" && x != "}" })
+    |> p.mny_of()
     |> p.map(string.concat)
   p.btwn(p.str("{"), new_p, p.str("}"))
   |> p.run("{JSON} Value")
@@ -264,6 +267,7 @@ pub fn btwn_ok2_test() {
   let new_p =
     p.chr_grab()
     |> p.sat_pred(fn(x) { list.contains(t.digits, x) })
+    |> p.mny_of()
     |> p.map(fn(x) { list.map(x, p.string_to_int) })
     |> p.map(fn(x) { int.sum(x) })
   p.btwn(p.prefix_str("{"), new_p, p.prefix_str("}"))
