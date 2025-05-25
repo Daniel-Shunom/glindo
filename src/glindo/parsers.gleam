@@ -901,12 +901,12 @@ fn sat_pred_helper(
   let t.Parser(p_fn) = parser
   case p_fn(state) {
     Error(e) -> Error(e)
-    Ok(t.ParseResult(res, rem, idx)) -> 
+    Ok(t.ParseResult(res, rem, idx)) ->
       case fnc(res) {
         True -> t.ParseResult(res, rem, idx) |> Ok
-        False -> err_msg |> Error 
+        False -> err_msg |> Error
       }
-  } 
+  }
 }
 
 fn chr_grab_helper(
