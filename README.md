@@ -45,28 +45,88 @@ glindo = ">= 1.0.0"
 ## 🚀 Quick Start
 
 ```gleam
-import glindo/parser
-import glindo/types
+import glindo/parser.{
+  map, 
+  btwn, 
+  num, 
+  sat_pred, 
+  tok, 
+  prefix_str, 
+  chc_of, 
+  sep_by
+}
+
+import glindo/types.{type Parser}
 import glindo/csv   
-import glindo/json
 
 pub fn main() {
-  // Parse CSV
-  let csv_text = "name,age\nAlice,30\nBob,25"
-  case P.run(glindo.csv(), csv_text) {
-    Ok(T.ParseResult(csv, _, _)) ->
-      io.println("Parsed CSV: \(inspect(csv))")
-    Error(err) ->
-      io.println("CSV parse error: \(err)")
-  }
+// A simple parser naive CSV parser
+pub type CSVal {
+  CSVInt(Int)
+  CSVStr(String)
+  CSVBool(Bool)
+}
 
-  // Parse JSON
-  let json_text = "{\"foo\": [1, 2, 3], \"bar\": true}"
-  case glindo.parse_json(json_text) {
-    Ok(value) ->
-      io.println("Parsed JSON: \(inspect(value))")
-    Error(err) ->
-      io.println("JSON parse error: \(err)")
+pub type CSVRecord {
+  Field(line: Int, records: List(CSVal))
+}
+
+pub type CSV {
+  CSV(value: List(CSVRecord))
+}
+
+fn csv_quoted_string() -> Parser(CSVal) {
+  btwn(
+    tok(prefix_str("\"")),
+    chc_of([
+      sat_pred(chr_grab(), fn(x) { x != "\"" }),
+      map(prefix_str("\"\""), fn(x) { [x] }),
+    ]),
+    tok(prefix_str("\"")),
+  )
+  |> map(string.concat)
+  |> map(string.trim)
+  |> map(fn(x) { CSVStr(x) })
+}
+
+fn csv_unquoted_string() -> Parser(CSVal) {
+  chr_grab()
+  |> sat_pred(fn(x) { x != "," && x != "\r\n" && x != "\n" })
+  |> map(string.concat)
+  |> map(string.trim)
+  |> map(fn(x) { CSVStr(x) })
+}
+
+fn csv_string() -> Parser(CSVal) {
+  [csv_quoted_string(), csv_unquoted_string()]
+  |> chc_of()
+}
+
+fn csv_num() -> Parser(CSVal) {
+  use num <- map(num())
+  CSVInt(num)
+}
+
+fn filter_csval(val: CSVal) -> Bool {
+  val != CSVStr("\r\n")
+}
+
+fn csv_record() -> Parser(CSVRecord) {
+  [csv_string(), csv_num()]
+  |> chc_of()
+  |> sep_by(prefix_str(","))
+  |> map(fn(x) { list.filter(x, filter_csval) })
+  |> map(fn(rec) { Field(1, rec) })
+}
+
+fn csv() -> Parser(CSV) {
+  csv_record()
+    |> sep_by(
+      [tok(prefix_str("\r\n")), tok(prefix_str("\n"))]
+      |> chc_of()
+      |> tok(),
+    )
+    |> map(fn(csv) { CSV(csv) })
   }
 }
 ```
