@@ -53,6 +53,15 @@ pub type ParseResult(n) {
   )
 }
 
+pub type ParseError(t, m) {
+  ParseError(
+    token: t,
+    line: Int,
+    column: Int, 
+    messaage: m,
+  )
+}
+
 /// The parsing state threaded through the `Parser` monad.
 ///
 /// - `str` holds the yet‐to‐be‐consumed portion of the input.
