@@ -171,11 +171,6 @@ gleam test    # Execute the test suite
 Please follow the Gleam style guide and include documentation comments for any new public API.
 
 
-# 📄 License
-This project is released under the [Apache License](https://opensource.org/license/mit).
-Feel free to use, modify, and distribute as you see fit.
-
-
 ## 📞 Contact Information
 
 If you’d like to reach out, feel free to connect via:
