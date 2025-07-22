@@ -24,7 +24,7 @@
 /// and either returns a value of type `a` along with the leftover text
 /// or fails with an error message.
 pub type Parser(a) {
-  Parser(fn(ParserState) -> Result(ParseResult(a), String))
+  Parser(fn(ParserState) -> Result(ParseResult(a), ParseError(a)))
 }
 
 /// The result of a successful parse, parameterized by the parsed value type `n`.
@@ -50,15 +50,19 @@ pub type ParseResult(n) {
     rem: String,
     /// Index in the original input after consuming `res`
     idx: Int,
+    /// current line being parsed
+    line: Int,
+    /// current column being parsed
+    col: Int, 
   )
 }
 
-pub type ParseError(t, m) {
+pub type ParseError(m) {
   ParseError(
-    token: t,
+    token: m,
     line: Int,
-    column: Int, 
-    messaage: m,
+    col: Int, 
+    message: String,
   )
 }
 
@@ -79,6 +83,10 @@ pub type ParserState {
     str: String,
     /// Number of characters consumed so far
     idx: Int,
+    /// Line in the current string
+    line: Int,
+    /// Column of the current state.
+    col: Int,
   )
 }
 
