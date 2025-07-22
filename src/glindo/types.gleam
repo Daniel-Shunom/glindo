@@ -53,17 +53,12 @@ pub type ParseResult(n) {
     /// current line being parsed
     line: Int,
     /// current column being parsed
-    col: Int, 
+    col: Int,
   )
 }
 
 pub type ParseError(m) {
-  ParseError(
-    token: m,
-    line: Int,
-    col: Int, 
-    message: String,
-  )
+  ParseError(token: m, line: Int, col: Int, message: String)
 }
 
 /// The parsing state threaded through the `Parser` monad.
