@@ -43,7 +43,7 @@ import glindo/types as t
 /// // -> Error("Error: no number captured")
 /// ```
 pub fn num() -> t.Parser(Int) {
-  t.Parser(fn(state) { num_helper([], state) })
+  t.Parser(num_helper([], _))
 }
 
 /// Parses single white space " " and "\t" white-space characters
@@ -64,7 +64,7 @@ pub fn num() -> t.Parser(Int) {
 /// // -> Ok(ParseResult(res: "", rem: "no white-space", idx: 0))
 /// ```
 pub fn wht_space() -> t.Parser(String) {
-  map(mny_of(t.Parser(fn(state) { wht_spc_helper(state) })), s.concat)
+  map(mny_of(t.Parser(wht_spc_helper(_))), s.concat)
 }
 
 /// Parses for the first character in a string and returns a
@@ -82,7 +82,7 @@ pub fn wht_space() -> t.Parser(String) {
 /// // -> Error("Error: expected char, found none")
 /// ```
 pub fn chr_grab() -> t.Parser(String) {
-  t.Parser(fn(state) { chr_grab_helper(state) })
+  t.Parser(chr_grab_helper(_))
 }
 
 /// Parses a string for the first character as a single digit and 
@@ -100,7 +100,7 @@ pub fn chr_grab() -> t.Parser(String) {
 /// // -> Error("Error: expected '6' found 'T'")
 /// ```
 pub fn dgt(digit: Int) -> t.Parser(Int) {
-  t.Parser(fn(state) { dgt_helper(digit, state) })
+  t.Parser(dgt_helper(digit, _))
 }
 
 /// Parses for the specified character as first character in a string 
@@ -119,7 +119,7 @@ pub fn dgt(digit: Int) -> t.Parser(Int) {
 /// ```
 pub fn chr(pattern: String) -> t.Parser(String) {
   char_panicker(pattern)
-  t.Parser(fn(state) { chr_helper(pattern, state) })
+  t.Parser(chr_helper(pattern, _))
 }
 
 /// Parses a string for a given substring at the start of the string and
@@ -137,7 +137,7 @@ pub fn chr(pattern: String) -> t.Parser(String) {
 /// // -> Error("Error: given string does not start with 'spoon'")
 /// ```
 pub fn str(pattern: String) -> t.Parser(String) {
-  t.Parser(fn(state) { str_helper(pattern, state) })
+  t.Parser(str_helper(pattern, _))
 }
 
 /// Parses a string for a given substring at the start of the string and
@@ -155,7 +155,7 @@ pub fn str(pattern: String) -> t.Parser(String) {
 /// // -> Error("Error: given string does not start with 'spoon'")
 /// ```
 pub fn prefix_str(pattern: String) -> t.Parser(String) {
-  t.Parser(fn(state) { prefix_str_helper(pattern, state) })
+  t.Parser(prefix_str_helper(pattern, _))
 }
 
 /// Takes in a parser and looks ahead for the result of the successfully 
@@ -177,7 +177,7 @@ pub fn prefix_str(pattern: String) -> t.Parser(String) {
 /// // -> Error("Error: given string does not start with 'rubber'")
 /// ```
 pub fn peek_fwd(parser: t.Parser(a)) -> t.Parser(a) {
-  t.Parser(fn(state) { peek_fwd_helper(parser, state) })
+  t.Parser(peek_fwd_helper(parser, _))
 }
 
 // TODO -> write test
@@ -198,7 +198,7 @@ pub fn peek_fwd(parser: t.Parser(a)) -> t.Parser(a) {
 ///
 /// Returns a `Parser(a)` that, when run, calls your thunk to get the real parser.
 pub fn lazy(thunk: fn() -> t.Parser(a)) -> t.Parser(a) {
-  t.Parser(fn(state) { lazy_helper(state, thunk) })
+  t.Parser(lazy_helper(_, thunk))
 }
 
 /// Repeats runs a parser on a string until it "fails". `mny_of` always succeeds
@@ -220,7 +220,7 @@ pub fn lazy(thunk: fn() -> t.Parser(a)) -> t.Parser(a) {
 /// // -> ParseResult(res: [], rem: "bojack is a bad horse", idx: 0)
 /// ```
 pub fn mny_of(parser: t.Parser(a)) -> t.Parser(List(a)) {
-  t.Parser(fn(state) { mny_helper(parser, [], state) })
+  t.Parser(mny_helper(parser, [], _))
 }
 
 /// This combinator is designed to combine multiple parsers into one. It
@@ -244,7 +244,7 @@ pub fn mny_of(parser: t.Parser(a)) -> t.Parser(List(a)) {
 /// // -> Error("Error: no suitable parser found")
 /// ```
 pub fn chc_of(parserlist: List(t.Parser(a))) -> t.Parser(a) {
-  t.Parser(fn(state) { chc_helper(parserlist, state) })
+  t.Parser(chc_helper(parserlist, _))
 }
 
 // TODO -> write test
@@ -267,7 +267,7 @@ pub fn chc_of(parserlist: List(t.Parser(a))) -> t.Parser(a) {
 ///
 /// Returns a `Parser(a)` which on success has parsed as far as possible.
 pub fn chc_opt(parserlist: List(t.Parser(a))) -> t.Parser(a) {
-  t.Parser(fn(state) { chc_opt_helper(parserlist, state, []) })
+  t.Parser(chc_opt_helper(parserlist, _, []))
 }
 
 /// Takes in a parser of type `Parser(a), runs the parser, and returns 
@@ -288,7 +288,7 @@ pub fn chc_opt(parserlist: List(t.Parser(a))) -> t.Parser(a) {
 /// // -> Ok(ParseResult(res: None, rem: "but a 600 is crazy", idx: 0))
 /// ```
 pub fn opt_of(parser: t.Parser(a)) -> t.Parser(opt.Option(a)) {
-  t.Parser(fn(state) { opt_helper(parser, state) })
+  t.Parser(opt_helper(parser, _))
 }
 
 /// This combinator is designed to transform parsers. The parser combinator
@@ -311,7 +311,7 @@ pub fn opt_of(parser: t.Parser(a)) -> t.Parser(opt.Option(a)) {
 /// // -> Ok(ParseResult(res: 7E8, rem: " was wild ngl", idx: 4))
 /// ```
 pub fn map(parser: t.Parser(a), fnc: fn(a) -> b) -> t.Parser(b) {
-  t.Parser(fn(state) { map_helper(parser, state, fnc) })
+  t.Parser(map_helper(parser, _, fnc))
 }
 
 /// This combinator takes a list of parsers of the same type, runs each parser 
@@ -332,7 +332,7 @@ pub fn map(parser: t.Parser(a), fnc: fn(a) -> b) -> t.Parser(b) {
 /// |> run("What do you mean by that?")
 /// // -> Error("Error: could not match parser sequence")
 pub fn seq_of(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
-  t.Parser(fn(state) { seq_helper(parserlist, [], state) })
+  t.Parser(seq_helper(parserlist, [], _))
 }
 
 // TODO -> write test
@@ -351,7 +351,7 @@ pub fn seq_of(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
 ///
 /// Returns a `Parser(List(a))` with all values parsed in sequence.
 pub fn mny_chc(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
-  t.Parser(fn(state) { mny_chc_helper(parserlist, [], state) })
+  t.Parser(mny_chc_helper(parserlist, [], _))
 }
 
 /// This combinator takes in two parsers generic over type `a` and `b`. `Parser(a)` 
@@ -377,7 +377,7 @@ pub fn mny_chc(parserlist: List(t.Parser(a))) -> t.Parser(List(a)) {
 /// // -> Ok(ParseResult(res: ["No seperator yet"], rem: "", idx: 16))
 /// ```
 pub fn sep_by(item: t.Parser(a), sep: t.Parser(b)) -> t.Parser(List(a)) {
-  t.Parser(fn(state) { sep_by_helper(item, sep, [], state) })
+  t.Parser(sep_by_helper(item, sep, [], _))
 }
 
 /// This combinator takes in two parsers generic over type `a` and `b` respectively. 
@@ -419,7 +419,7 @@ pub fn skip(parser1: t.Parser(a), parser2: t.Parser(b)) -> t.Parser(b) {
 /// // -> Ok(ParseResult(res: "-", rem: "farm", idx: 8))
 /// ```
 pub fn bind(parser: t.Parser(a), fnc: fn(a) -> t.Parser(b)) -> t.Parser(b) {
-  t.Parser(fn(state) { bind_helper(parser, state, fnc) })
+  t.Parser(bind_helper(parser, _, fnc))
 }
 
 /// This generic combinator over type `a` takes a parser of type `Parser(a)` and a boolean 
@@ -441,7 +441,7 @@ pub fn bind(parser: t.Parser(a), fnc: fn(a) -> t.Parser(b)) -> t.Parser(b) {
 /// // -> Error("Error: unsatisfied predicate") 
 /// ```
 pub fn sat_pred(parser: t.Parser(a), fnc: fn(a) -> Bool) -> t.Parser(a) {
-  t.Parser(fn(state) { sat_pred_helper(parser, state, fnc) })
+  t.Parser(sat_pred_helper(parser, _, fnc))
 }
 
 /// This generic combinator takes in three parsers generic over type `a`, `b`, `c`, and returns 
@@ -534,13 +534,7 @@ pub fn string_to_int(str: String) -> Int {
 /// // -> random, list, of, strings
 /// ```
 pub fn print_array_string(list: List(String)) -> Nil {
-  case list {
-    [] -> Nil
-    [str, ..rest] -> {
-      io.println(str)
-      print_array_string(rest)
-    }
-  }
+  list.each(list, io.println)  
 }
 
 fn prp(l: List(a), m: a) -> List(a) {
@@ -553,18 +547,25 @@ fn prp(l: List(a), m: a) -> List(a) {
 fn str_helper(
   pattern: String,
   state: t.ParserState,
-) -> Result(t.ParseResult(String), String) {
-  let invalid = "Error: given string does not start with '" <> pattern <> "'"
+) -> Result(t.ParseResult(String), t.ParseError(String)) {
   case s.starts_with(state.str, pattern) {
-    False -> invalid |> Error
+    False -> {
+      t.ParseError(
+        token: pattern,
+        line: state.line,
+        col: state.col,
+        message: "Pos " <> int.to_string(state.col) <> ": pattern match failed"
+      ) |> Error
+    }
     True -> {
       let remaining = s.drop_start(state.str, s.length(pattern))
       t.ParseResult(
         res: pattern,
         rem: remaining,
-        idx: state.idx + s.length(pattern),
-      )
-      |> Ok
+        idx: state.idx + 1,
+        line: state.line,
+        col: state.col + 1
+      ) |> Ok
     }
   }
 }
@@ -572,40 +573,65 @@ fn str_helper(
 fn prefix_str_helper(
   pattern: String,
   state: t.ParserState,
-) -> Result(t.ParseResult(String), String) {
-  let err_msg = "Error: prefix '" <> pattern <> "' not found"
+) -> Result(t.ParseResult(String), t.ParseError(String)) {
   case s.starts_with(state.str, pattern) {
-    False -> err_msg |> Error
+    False -> t.ParseError(
+      token: pattern,
+      line: state.line,
+      col: state.col,
+      message: 
+        "Line: " <> int.to_string(state.line) <> "\n"
+        <> "Col: " <> int.to_string(state.col) <> "\n"
+        <> "Message: " <> "pattern match failed"
+      ) |> Error
     True ->
       t.ParseResult(
         res: pattern,
         rem: s.drop_start(state.str, s.length(pattern)),
         idx: state.idx + s.length(pattern),
-      )
-      |> Ok
+        col: state.idx + s.length(pattern),
+        line: state.line,
+      ) |> Ok
   }
 }
 
 fn chr_helper(
   pattern: String,
   state: t.ParserState,
-) -> Result(t.ParseResult(String), String) {
+) -> Result(t.ParseResult(String), t.ParseError(String)) {
   let more_than_one = "Error: more than one char detected"
   let invalid =
     "Error: did not find '" <> pattern <> "' at '" <> state.str <> "'"
   case s.length(pattern) != 1 {
-    True -> more_than_one |> Error
+    True -> t.ParseError(
+      token: pattern,
+      line: state.line,
+      col: state.col,
+      message: 
+        "Line: " <> int.to_string(state.line) <> "\n"
+        <> "Col: " <> int.to_string(state.col) <> "\n"
+        <> "Message: more than one char detected" <> "\n"
+      ) |> Error
     False -> {
       case s.starts_with(state.str, pattern) {
-        False -> invalid |> Error
+        False -> t.ParseError(
+          token: pattern,
+          line: state.line,
+          col: state.col,
+          message: 
+            "Line: " <> int.to_string(state.line) <> "\n"
+            <> "Col: " <> int.to_string(state.col) <> "\n"
+            <> "Message: char pattern not found \n"
+          ) |> Error
         True -> {
           let remaining = s.drop_start(state.str, s.length(pattern))
           t.ParseResult(
             res: pattern,
             rem: remaining,
             idx: state.idx + s.length(pattern),
-          )
-          |> Ok
+            line: state.line,
+            col: state.col + s.length(pattern)
+          ) |> Ok
         }
       }
     }
@@ -615,18 +641,38 @@ fn chr_helper(
 fn dgt_helper(
   digit: Int,
   state: t.ParserState,
-) -> Result(t.ParseResult(Int), String) {
+) -> Result(t.ParseResult(Int), t.ParseError(Int)) {
   case s.to_graphemes(state.str) {
-    [] ->
-      Error("Unexpected end of input; expected digit " <> int.to_string(digit))
+    [] -> t.ParseError(
+      token: digit,
+      line: state.line,
+      col: state.col,
+      message: 
+        "Line: " <> int.to_string(state.line) <> "\n"
+        <> "Col: " <> int.to_string(state.col) <> "\n"
+        <> "Message: empty token stream"
+      ) |> Error
     [head, ..] -> {
       let expected = int.to_string(digit)
-      let err = "Error: expected '" <> expected <> "', found '" <> head <> "'"
       case head == expected {
-        False -> err |> Error
+        False -> t.ParseError(
+          token: digit, 
+          line: state.line,
+          col: state.col,
+          message: 
+            "Line: " <> int.to_string(state.line) <> "\n"
+            <> "Col: " <> int.to_string(state.col) <> "\n"
+            <> "Message: pattern match failed \n"
+          ) |> Error
         True -> {
           let new_rem = s.drop_start(state.str, 1)
-          t.ParseResult(res: digit, rem: new_rem, idx: state.idx + 1) |> Ok
+          t.ParseResult(
+            res: digit, 
+            rem: new_rem, 
+            idx: state.idx + 1,
+            line: state.line,
+            col: state.col + 1,
+          ) |> Ok
         }
       }
     }
@@ -638,11 +684,19 @@ fn num_helper(
   state: t.ParserState,
 ) -> Result(t.ParseResult(Int), String) {
   case s.to_graphemes(state.str) {
-    [] -> "invalid parse: empty string" |> Error
+    [] -> t.ParseResult(
+    ) |> Error
     [n, ..rest] -> {
       case list.contains(t.digits, n) {
         True ->
-          num_helper(prp(acc, n), t.ParserState(s.concat(rest), state.idx + 1))
+          num_helper(
+            prp(acc, n), 
+            t.ParserState(
+              str: s.concat(rest), 
+              idx: state.idx + 1,
+              line: state.line,
+              col: state.col
+          ))
         False -> {
           case acc {
             [] -> Error("Error: no number captured")
